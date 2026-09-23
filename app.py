@@ -2,6 +2,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 # 1. 데이터 로드
@@ -30,10 +31,25 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # 7. 모델 학습
+# Logistic Regression
 model = LogisticRegression(max_iter=1000)
 model.fit(X_train, y_train)
+
+# Random Forest
+rf_model = RandomForestClassifier(
+    n_estimators=200,
+    class_weight="balanced",
+    random_state=42,
+    n_jobs=-1
+)
+rf_model.fit(X_train, y_train)
 
 # 8. 평가
 y_pred = model.predict(X_test)
 acc = accuracy_score(y_test, y_pred)
-print(f"Accuracy: {acc:.4f}")
+
+rf_pred = rf_model.predict(X_test)
+rf_acc = accuracy_score(y_test, rf_pred)
+
+print(f"Logistic Regression Accuracy: {acc:.4f}")
+print(f"Random Forest Accuracy: {rf_acc:.4f}")
