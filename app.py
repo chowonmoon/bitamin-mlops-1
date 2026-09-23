@@ -7,6 +7,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 # 1. 데이터 로드
 df = pd.read_csv("WA_FnUseC_TelcoCustomerChurn.csv")
@@ -70,9 +71,17 @@ rf_model.fit(X_train, y_train)
 # 11. 평가
 y_pred = model.predict(X_test)
 acc = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
 
 rf_pred = rf_model.predict(X_test)
 rf_acc = accuracy_score(y_test, rf_pred)
 
-print(f"Logistic Regression Accuracy: {acc:.4f}")
-print(f"Random Forest Accuracy: {rf_acc:.4f}")
+print("[Logistic Regression]")
+print(f"Accuracy:  {acc:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall:    {recall:.4f}")
+print(f"F1-score:  {f1:.4f}")
+print("[Random Forest]")
+print(f"Accuracy:  {rf_acc:.4f}")
