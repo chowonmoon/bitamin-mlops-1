@@ -56,7 +56,7 @@ X_test = preprocessor.transform(X_test)
 
 # 10. 모델 학습
 # Logistic Regression
-model = LogisticRegression(max_iter=1000)
+model = LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42)
 model.fit(X_train, y_train)
 
 # Random Forest
