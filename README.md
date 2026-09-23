@@ -1,3 +1,14 @@
+# bitamin-mlops-1
+
+비타민 26-2학기 MLOps 세션 1조 repository
+
+| 주차 | 주제 | 기록 |
+|---|---|---|
+| 1주차 | 재현 가능한 ML 개발환경 | 아래 README |
+| 2주차 | Git / GitHub 기반 협업 | [week2/README.md](week2/README.md) |
+
+---
+
 # 1조 - 1주차 스냅샷 repository
 
 재현 가능한 ML 개발환경 구축 (WSL/Conda/Docker)
