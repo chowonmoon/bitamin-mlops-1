@@ -14,19 +14,26 @@
 import argparse
 from pathlib import Path
 
+import joblib  # [STEP 4]
 import pandas as pd
+import wandb  # [STEP 1]
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, log_loss, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 ROOT = Path(__file__).resolve().parent.parent  # 조별 repo 최상위 폴더
 DATA_PATH = ROOT / "WA_FnUseC_TelcoCustomerChurn.csv"
+MODEL_PATH = ROOT / "models" / "churn_model.joblib"  # [STEP 4] models/는 .gitignore 대상
 SPLIT_SEED = 42  # 데이터 분할 seed는 모든 실험에서 고정 (모델 seed와 분리)
+
+# [STEP 1] W&B 기록 위치 — 조원 모두 같은 값을 사용
+ENTITY = None  # 조별 W&B Team 이름 (예: "bitamin17-mlops-3"), Team이 없으면 None → 개인 계정
+PROJECT = "bitamin17-week3-churn"
 
 
 # 1. 실행 인자: 코드를 고치지 않고 실험 조건만 바꿔서 실행
@@ -40,6 +47,7 @@ def parse_args():
     p.add_argument("--max_depth", type=int, default=None)             # rf: 기본 제한 없음 / gb: 기본 3
     p.add_argument("--min_samples_leaf", type=int, default=1)         # rf: 잎 노드 최소 샘플 수
     p.add_argument("--learning_rate", type=float, default=0.1)        # gb: 학습률
+    p.add_argument("--save", action="store_true")                     # [STEP 4] 최종 모델 저장
     return p.parse_args()
 
 
@@ -138,12 +146,75 @@ def main():
     params = get_params(args)
     print(f"model={args.model} seed={args.seed} params={params}")
 
+    # [STEP 1] run 시작: 어떤 조건으로 실험했는지(config) 기록
+    run = wandb.init(
+        entity=ENTITY,
+        project=PROJECT,
+        name=make_run_name(args.model, params),
+        group=args.model,  # [STEP 2] 모델 종류별로 묶어 보기
+        config={"model": args.model, "seed": args.seed, **params},
+    )
+
     # 6. 학습 및 valid 평가
     model = build_model(args.model, params, args.seed, X_train)
     model.fit(X_train, y_train)
 
+    train_metrics = evaluate(model, X_train, y_train)  # [STEP 2] 과적합 확인용
     valid_metrics = evaluate(model, X_valid, y_valid)
+    print_metrics("train", train_metrics)
     print_metrics("valid", valid_metrics)
+
+    # [STEP 1] 결과 기록 후 run 종료
+    # [STEP 2] train 지표와 과적합 정도(gap = train AUC - valid AUC)도 함께 기록
+    run.log({
+        **{f"train/{k}": v for k, v in train_metrics.items()},
+        **{f"valid/{k}": v for k, v in valid_metrics.items()},
+        "gap/roc_auc": train_metrics["roc_auc"] - valid_metrics["roc_auc"],
+    })
+
+    # [STEP 3] 평가 그래프 기록: 혼동행렬 + ROC 곡선 (valid 기준)
+    valid_pred = model.predict(X_valid)
+    valid_proba = model.predict_proba(X_valid)
+    run.log({
+        "plots/confusion_matrix": wandb.plot.confusion_matrix(
+            y_true=y_valid.tolist(), preds=valid_pred.tolist(), class_names=["stay", "churn"]
+        ),
+        "plots/roc_curve": wandb.plot.roc_curve(
+            y_valid.tolist(), valid_proba.tolist(), labels=["stay", "churn"], classes_to_plot=[1]
+        ),
+    })
+
+    # [심화] GB 학습 곡선: 트리를 하나씩 더할 때마다 valid log-loss 기록 → 과적합 시작 지점 확인
+    if args.model == "gb":
+        run.define_metric("curve/*", step_metric="n_trees")
+        Xt = model.named_steps["preprocessor"].transform(X_train)
+        Xv = model.named_steps["preprocessor"].transform(X_valid)
+        gb = model.named_steps["classifier"]
+        for n_trees, (pt, pv) in enumerate(zip(gb.staged_predict_proba(Xt), gb.staged_predict_proba(Xv)), start=1):
+            if n_trees % 5 == 0:
+                run.log({
+                    "n_trees": n_trees,
+                    "curve/train_logloss": log_loss(y_train, pt[:, 1]),
+                    "curve/valid_logloss": log_loss(y_valid, pv[:, 1]),
+                })
+
+    # [STEP 4] 최종 모델 저장: train+valid 전체로 다시 학습 → test로 한 번만 평가 → 파일 저장 + W&B Artifact
+    if args.save:
+        final_model = build_model(args.model, params, args.seed, X_train)
+        final_model.fit(pd.concat([X_train, X_valid]), pd.concat([y_train, y_valid]))
+        test_metrics = evaluate(final_model, X_test, y_test)
+        print_metrics("test", test_metrics)
+        run.log({f"test/{k}": v for k, v in test_metrics.items()})
+
+        MODEL_PATH.parent.mkdir(exist_ok=True)
+        joblib.dump(final_model, MODEL_PATH)
+        print(f"saved: {MODEL_PATH.relative_to(ROOT)}")
+
+        artifact = wandb.Artifact("churn-model", type="model", metadata={"model": args.model, **params})
+        artifact.add_file(str(MODEL_PATH))
+        run.log_artifact(artifact)
+
+    run.finish()
 
 
 if __name__ == "__main__":
