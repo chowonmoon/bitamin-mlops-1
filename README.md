@@ -30,7 +30,7 @@ Telco Customer Churn (`WA_FnUseC_TelcoCustomerChurn.csv`)
 
 ---
 
-## 복습과제 — 문초원 (C: Gradient Boosting)
+## 3주차 복습과제 — 문초원 (C: Gradient Boosting)
 
 - 브랜치: `feature/wandb-cw` (코드: `solution-final` 기준)
 - W&B 프로젝트: [chowonmoon-dongduk-women-s-university / bitamin17-week3-churn](https://wandb.ai/chowonmoon-dongduk-women-s-university/bitamin17-week3-churn)
