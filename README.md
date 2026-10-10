@@ -60,3 +60,35 @@ Telco Customer Churn (`WA_FnUseC_TelcoCustomerChurn.csv`)
 - test: ROC-AUC **0.8647** · Recall **0.8204** · Accuracy 0.7722
 - `models/churn_model.joblib` (5.2MB) + W&B Artifact `churn-model:v0`
 - Artifact digest `c1d607e58094a3751ff7c1bda22ba688`가 조원이 당일 저장한 모델과 **동일** → 다른 PC에서 재학습해도 같은 모델이 나옴을 확인 (재현성)
+
+---
+
+## 3주차 복습과제 — 이정빈 (B: Random Forest)
+
+- 브랜치: `feature/wandb-jb`
+- W&B 프로젝트: [jeongbin511-sungkyunkwan-university / bitamin17-week3-churn](https://forge.coreweave.com/wandb/jeongbin511-sungkyunkwan-university/bitamin17-week3-churn)
+  - 조 W&B Team 초대 전이라 개인 계정에 기록 (`ENTITY = None`)
+- 체크포인트 캡처 (CP2~CP5): [week3/images/review_jeongbin.pdf](week3/images/review_jeongbin.pdf)
+
+### 실험 결과 (valid 기준)
+
+| Run | valid ROC-AUC | valid Recall | gap (train−valid AUC) |
+| --- | --- | --- | --- |
+| RF 기본 (깊이 제한 없음) | 0.8374 | 0.4947 | **0.1624** (과적합) |
+| RF depth 6 | 0.8667 | 0.8262 | −0.0031 |
+| RF depth 8 | 0.8694 | 0.8262 | −0.0040 |
+| **RF depth 10 · leaf 10** (조 최종 모델) | **0.8702** | 0.8075 | 0.0200 |
+
+### 해석
+
+- 기본 RF는 train AUC 0.9998인데 valid AUC는 0.8374라 심하게 과적합이다. 트리 깊이를 제한하자 gap이 거의 0이 되고 valid AUC가 0.870까지 올랐다.
+- 혼동행렬 기준으로 valid 이탈 고객 374명 중 기본 RF는 189명을 놓쳤지만, 깊이를 제한한 RF는 65~72명만 놓쳤다. (depth 10 · leaf 10: 72명)
+- AUC 최고 조건(depth 10 · leaf 10)은 Recall도 0.81로 높아 조 최종 모델로 사용했다.
+
+### 최종 모델 저장
+
+- `python week3/train.py --model rf --max_depth 10 --min_samples_leaf 10 --save`
+- test: ROC-AUC **0.8647** · Recall **0.8204** · Accuracy 0.7722
+- `models/churn_model.joblib` (5.4MB) + W&B Artifact `churn-model:v0`
+- Artifact digest `15674719f9b69e64de8d8fcc5b5c0784`
+
