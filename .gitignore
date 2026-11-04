@@ -16,3 +16,4 @@ artifacts/
 wandb/
 *.joblib
 *.pkl
+!week4/churn_model.joblib
