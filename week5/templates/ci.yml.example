@@ -1,0 +1,49 @@
+# STEP 3: 이 파일을 저장소 루트의 .github/workflows/ci.yml로 복사합니다.
+name: Week 5 CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: week5-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: |
+            week4/requirements.txt
+            week5/requirements-dev.txt
+      - name: Install dependencies
+        run: python -m pip install -r week5/requirements-dev.txt
+      - name: Test API
+        run: python -m pytest week5/test_main.py -v
+
+  build:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build Docker image
+        run: docker build -f week5/Dockerfile -t week5-api:ci .
+      - name: Start container
+        run: docker run -d --name week5-api -p 8000:8000 week5-api:ci
+      - name: Verify real HTTP prediction
+        run: python3 week5/smoke.py
+      - name: Container logs and cleanup
+        if: always()
+        run: |
+          docker logs week5-api || true
+          docker rm -f week5-api || true
