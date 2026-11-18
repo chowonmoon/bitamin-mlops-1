@@ -1,3 +1,7 @@
+## 전예원 개인 제출 결과 (11월 18일)
+
+[체크포인트 결과 및 캡처 5장 보기](예원_README.md)
+
 # Week 5 — Docker + GitHub Actions CI/CD 실습
 
 **목표:** 실제 고객 이탈 예측 API를 Docker 이미지로 만들고 push → 테스트 → 빌드 → Docker Hub 업로드를 연결합니다. 실습 50분. 원격 서버 자동 교체는 선택 확장입니다.
