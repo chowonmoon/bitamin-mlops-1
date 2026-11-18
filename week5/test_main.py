@@ -32,5 +32,7 @@ def test_missing_required_field():
     payload.pop("tenure")
     response = client.post("/predict", json=payload)
     assert response.status_code == 422
-    assert any(e["loc"] == ["body", "tenure"]
-               for e in response.json()["detail"])
+    assert any(
+        e["loc"] == ["body", "tenure"]
+        for e in response.json()["detail"]
+    )
