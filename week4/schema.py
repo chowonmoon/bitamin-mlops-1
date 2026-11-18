@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
 
+# 3주차 학습 때 X_train과 같은 컬럼 이름·순서·타입
 class CustomerInput(BaseModel):
-    # 순서 = 모델 학습 컬럼 순서 (변경 금지)
     gender: str
     SeniorCitizen: int
     Partner: str
@@ -31,7 +31,7 @@ class CustomerInput(BaseModel):
                     "SeniorCitizen": 0,
                     "Partner": "No",
                     "Dependents": "No",
-                    "tenure": 2,
+                    "tenure": 12,
                     "PhoneService": "Yes",
                     "MultipleLines": "No",
                     "InternetService": "Fiber optic",
@@ -44,8 +44,8 @@ class CustomerInput(BaseModel):
                     "Contract": "Month-to-month",
                     "PaperlessBilling": "Yes",
                     "PaymentMethod": "Electronic check",
-                    "MonthlyCharges": 70.7,
-                    "TotalCharges": 151.65,
+                    "MonthlyCharges": 70.5,
+                    "TotalCharges": 846.0,
                 }
             ]
         }

@@ -1,0 +1,48 @@
+# STEP 4: ci.yml의 jobs: 아래에서 test:, build:와 같은 깊이로 추가합니다.
+# 이 파일은 독립 워크플로가 아닙니다. 전체 완성 파일은 solution 브랜치에 있습니다.
+  publish:
+    needs: build
+    if: >-
+      github.event_name != 'pull_request' &&
+      github.ref_name == github.event.repository.default_branch &&
+      vars.ENABLE_DOCKERHUB_PUSH == 'true'
+    runs-on: ubuntu-24.04
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IMAGE_NAME: ${{ vars.DOCKERHUB_IMAGE || 'bitamin-mlops-week5' }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check registry settings
+        run: |
+          test -n "$DOCKERHUB_USERNAME" || { echo 'Missing DOCKERHUB_USERNAME Secret'; exit 1; }
+          test -n "$DOCKERHUB_TOKEN" || { echo 'Missing DOCKERHUB_TOKEN Secret'; exit 1; }
+          echo "Publishing docker.io/$DOCKERHUB_USERNAME/$IMAGE_NAME"
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Intel / Apple Silicon images
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: week5/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Verify published image
+        run: |
+          IMAGE="$DOCKERHUB_USERNAME/$IMAGE_NAME:${GITHUB_SHA}"
+          docker buildx imagetools inspect "$IMAGE"
+          docker pull "$IMAGE"
+          docker run -d --name week5-published -p 8000:8000 "$IMAGE"
+          python3 week5/smoke.py
+      - name: Published container logs and cleanup
+        if: always()
+        run: |
+          docker logs week5-published || true
+          docker rm -f week5-published || true
