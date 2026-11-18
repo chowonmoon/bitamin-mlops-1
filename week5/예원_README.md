@@ -39,7 +39,9 @@ Swagger의 POST `/predict`에서 HTTP 200, churn=1, churn_probability=0.80412358
 
 ![CP5 Docker Hub 이미지 실행](captures/yewon1118/cp5.png)
 
-Docker Hub Tags 화면 캡처는 이번에 제공한 5장에 포함되지 않았습니다. 이미지 링크는 위에 기록했습니다.
+Docker Hub에서 latest 및 검증한 커밋의 SHA 태그와 linux/amd64, linux/arm64 지원을 확인했습니다. Tags 캡처 시점에는 latest가 후속 업로드로 갱신되어 있으므로, 위 실행에서 검증한 버전은 SHA 태그와 기록된 digest로 식별합니다.
+
+![CP5 Docker Hub Tags](captures/yewon1118/cp5-tags.png)
 
 ## 문제와 해결
 
