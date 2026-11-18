@@ -12,12 +12,25 @@ SAMPLE = json.loads(Path(__file__).with_name("sample_request.json").read_text())
 
 
 def test_root():
-    pytest.fail("TODO: GET /의 상태 코드와 응답을 검증하세요 (week5/README.md STEP 1)")
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"message": "ok"}
 
 
 def test_predict():
-    pytest.fail("TODO: SAMPLE로 POST /predict를 요청하고 응답을 검증하세요")
+    response = client.post("/predict", json=SAMPLE)
+    assert response.status_code == 200
+    result = response.json()
+    assert set(result) == {"churn", "churn_probability"}
+    assert type(result["churn"]) is int
+    assert result["churn"] in (0, 1)
+    assert 0 <= result["churn_probability"] <= 1
 
 
 def test_missing_required_field():
-    pytest.fail("TODO: 필수값 tenure가 없는 요청이 422인지 검증하세요")
+    payload = SAMPLE.copy()
+    payload.pop("tenure")
+    response = client.post("/predict", json=payload)
+    assert response.status_code == 422
+    assert any(e["loc"] == ["body", "tenure"]
+               for e in response.json()["detail"])
